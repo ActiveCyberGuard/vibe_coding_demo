@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Escape — Evacuation Route Simulator</title>
+<style>
+:root{--bg:#0e141b;--card:#161f29;--card2:#1c2733;--line:#2a3846;--tx:#e8eef4;--mu:#93a4b5;--route:#2ee59d;--sel:#4da3ff;--bad:#ff5d5d;--warn:#ffb020;--exit:#2ee59d;--room:#6f8fb0;--jn:#a58cff;--sh:0 8px 24px rgba(0,0,0,.35)}
+@media (prefers-color-scheme:light){:root{--bg:#eef2f6;--card:#fff;--card2:#f3f6f9;--line:#d5dee7;--tx:#14202b;--mu:#566879;--route:#0a9f66;--sel:#1b6fd1;--bad:#d62f2f;--warn:#b86e00;--exit:#0a9f66;--room:#4a6a8a;--jn:#6b4fd6;--sh:0 6px 18px rgba(20,32,43,.12)}}
+*{box-sizing:border-box}html,body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{background:var(--bg);color:var(--tx);font:15px/1.45 "Segoe UI","Noto Sans Bengali","Hind Siliguri",system-ui,sans-serif;overflow-x:hidden}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+h1{font-size:20px;margin:0}h2{font-size:13px;margin:0 0 8px;color:var(--mu);font-weight:600}
+.brand{display:flex;align-items:center;gap:10px}.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#2ee59d,#4da3ff);display:grid;place-items:center;color:#06210f;font-weight:800}
+.bname{color:var(--mu);font-size:13px}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;background:none;color:var(--tx);padding:7px 14px;cursor:pointer;font:inherit}.lang button[aria-pressed=true]{background:var(--sel);color:#fff}
+main{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:16px;padding:16px 20px;max-width:1500px;margin:auto}
+@media(max-width:940px){main{grid-template-columns:minmax(0,1fr);padding:12px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--sh)}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+button,select{font:inherit;color:var(--tx)}
+:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+.btn{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;transition:transform .12s,background .12s;min-height:40px}
+.btn:hover{transform:translateY(-1px);background:var(--line)}.btn.pri{background:var(--sel);border-color:var(--sel);color:#fff}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px;transition:.15s}.drop.over{border-color:var(--sel);background:var(--card2)}
+.drop .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.maphead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-weight:600;font-size:13px;border:1px solid currentColor}
+.b-ok{color:var(--route)}.b-bad{color:var(--bad)}.b-warn{color:var(--warn)}.b-mu{color:var(--mu)}
+#map{width:100%;height:auto;max-height:70vh;display:block;background:var(--card2);border-radius:12px;min-height:260px}
+select{width:100%;padding:9px;border-radius:10px;background:var(--card2);border:1px solid var(--line)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.kv div{background:var(--card2);border-radius:10px;padding:8px 10px}.kv small{color:var(--mu);display:block;font-size:12px}.kv b{font-size:17px;word-break:break-word}
+.path{margin:10px 0 0;padding:10px;background:var(--card2);border-radius:10px;font-weight:600;word-break:break-word}
+ol.steps{margin:8px 0 0;padding-left:22px;color:var(--mu);font-size:13px}
+.empty{padding:12px;border-radius:10px;font-weight:600;border:1px solid currentColor}
+.list{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto}
+.item{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--card2);padding:6px 8px 6px 10px;border-radius:10px}
+.item span.n{min-width:0;overflow-wrap:anywhere}.item .st{font-size:12px;font-weight:700;margin-right:6px}
+.btn.sm{padding:5px 10px;min-height:34px;white-space:nowrap}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px;color:var(--mu)}.legend svg{vertical-align:middle;margin-right:4px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);padding:10px 16px;border-radius:12px;box-shadow:var(--sh);opacity:0;pointer-events:none;transition:opacity .2s;max-width:92vw;z-index:9}#toast.show{opacity:1}
+.err{color:var(--bad);margin-top:8px;font-weight:600}
+.node{cursor:pointer}.node text{fill:var(--tx);font-size:12px;font-weight:600;paint-order:stroke;stroke:var(--card2);stroke-width:3px;text-anchor:middle}
+.ec{fill:var(--tx);font-size:12px;font-weight:700;text-anchor:middle;paint-order:stroke;stroke:var(--card2);stroke-width:4px}
+.rt{stroke-dasharray:var(--len);animation:draw .6s ease-out forwards}@keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.rt{animation:none}.btn{transition:none}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="logo" aria-hidden="true">SE</div><div><h1 data-i="title"></h1><div class="bname" id="bname"></div></div></div>
+ <div class="lang" role="group" aria-label="Language / ভাষা"><button id="l-bn" aria-pressed="false">বাংলা</button><button id="l-en" aria-pressed="true">English</button></div>
+</header>
+<main>
+ <section class="card" aria-labelledby="mh">
+  <div class="drop" id="drop">
+   <div id="droptxt"></div>
+   <div class="row"><button class="btn pri" id="imp" data-i="import"></button><button class="btn" id="smp" data-i="sample"></button></div>
+   <input type="file" id="file" accept=".json,application/json" hidden>
+   <div class="err" id="err" role="alert"></div>
+  </div>
+  <div class="maphead"><h2 id="mh" data-i="map" style="margin:0"></h2><span id="badge" class="badge b-mu" role="status" aria-live="polite"></span></div>
+  <svg id="map" role="img" aria-label="Building map" viewBox="0 0 800 400"></svg>
+ </section>
+ <aside class="side">
+  <div class="card"><h2 data-i="start"></h2><select id="startSel" aria-label="Start location"></select>
+   <div id="summary"></div></div>
+  <div class="card"><h2 data-i="blockedLoc"></h2><div class="list" id="hN"></div></div>
+  <div class="card"><h2 data-i="blockedCor"></h2><div class="list" id="hE"></div></div>
+  <div class="card"><h2 data-i="closedEx"></h2><div class="list" id="hX"></div>
+   <button class="btn" id="reset" style="margin-top:12px;width:100%" data-i="reset"></button></div>
+  <div class="card"><h2 data-i="legend"></h2><div class="legend" id="legend"></div></div>
+ </aside>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+/* ===== Sample (parsed through the same importer — never hard-coded routes) ===== */
+const SAMPLE={building_name:"Demo Building",nodes:[
+{id:"R1",label:"Room 101",type:"room",x:90,y:90},{id:"R2",label:"Room 102",type:"room",x:90,y:310},
+{id:"C1",label:"Junction A",type:"junction",x:250,y:90},{id:"C2",label:"Junction B",type:"junction",x:410,y:90},
+{id:"C3",label:"Junction C",type:"junction",x:250,y:310},{id:"C4",label:"Junction D",type:"junction",x:410,y:310},
+{id:"E1",label:"North Exit",type:"exit",x:600,y:90},{id:"E2",label:"South Exit",type:"exit",x:600,y:310}],
+edges:[{id:"K1",from:"R1",to:"C1",cost:2},{id:"K2",from:"C1",to:"C2",cost:2},{id:"K3",from:"C2",to:"E1",cost:3},
+{id:"K4",from:"C1",to:"C3",cost:3},{id:"K5",from:"R2",to:"C3",cost:1},{id:"K6",from:"C3",to:"C4",cost:3},{id:"K7",from:"C4",to:"E2",cost:3}],
+initial_state:{blocked_nodes:[],blocked_edges:[],closed_exits:[]}};
+
+/* ===== i18n ===== */
+const T={en:{title:"Smart Escape",import:"Import building.json",sample:"Load Sample Dataset",drop:"Drag & drop a building.json file here, or use the button. Files are read locally and never uploaded.",map:"Building map",start:"Start location",chooseStart:"Choose a start location",noBuilding:"Import a building file to begin.",blockedLoc:"Rooms & junctions",blockedCor:"Corridors",closedEx:"Exits",reset:"Reset to initial state",legend:"Legend",available:"Available",blocked:"Blocked",open:"Open",closed:"Closed",block:"Block",unblock:"Unblock",close:"Close",reopen:"Reopen",room:"Room",junction:"Junction",exit:"Exit",selected:"Selected start",route:"Route",cost:"Total cost",corridors:"Corridors",dest:"Destination",from:"Start",steps:"Steps",okB:"Route found",noB:"No route available",sbB:"Starting location blocked",idleB:"Waiting for start",noRoute:"No route available — every open exit is cut off from this start.",startBlocked:"Starting location blocked. Unblock it or choose another start.",pickStart:"Select a start location to compute a route.",imported:"Imported",resetDone:"Simulation reset",rt:"Route",bad:"Cannot import:",nodesWord:"nodes",edgesWord:"edges",blockedEdge:"Blocked corridor",closedExit:"Closed exit",routeLegend:"Route",selectedL:"Selected start"},
+bn:{title:"স্মার্ট এস্কেইপ",import:"building.json ইম্পোর্ট করুন",sample:"নমুনা ডেটা লোড করুন",drop:"building.json ফাইল এখানে টেনে এনে ছাড়ুন, অথবা বোতাম ব্যবহার করুন। ফাইল শুধু আপনার ব্রাউজারে পড়া হয়, আপলোড হয় না।",map:"ভবনের মানচিত্র",start:"শুরুর স্থান",chooseStart:"শুরুর স্থান বাছাই করুন",noBuilding:"শুরু করতে একটি ভবনের ফাইল ইম্পোর্ট করুন।",blockedLoc:"কক্ষ ও জংশন",blockedCor:"করিডর",closedEx:"বহির্গমন পথ",reset:"প্রাথমিক অবস্থায় ফিরুন",legend:"সংকেত",available:"চলাচলযোগ্য",blocked:"অবরুদ্ধ",open:"খোলা",closed:"বন্ধ",block:"অবরুদ্ধ করুন",unblock:"অবরোধ সরান",close:"বন্ধ করুন",reopen:"খুলুন",room:"কক্ষ",junction:"জংশন",exit:"বহির্গমন",selected:"নির্বাচিত শুরু",route:"পথ",cost:"মোট খরচ",corridors:"করিডর",dest:"গন্তব্য",from:"শুরু",steps:"ধাপসমূহ",okB:"পথ পাওয়া গেছে",noB:"কোনো পথ নেই",sbB:"শুরুর স্থান অবরুদ্ধ",idleB:"শুরু বাছাইয়ের অপেক্ষায়",noRoute:"কোনো পথ নেই — এই শুরু থেকে কোনো খোলা বহির্গমনে পৌঁছানো যায় না।",startBlocked:"শুরুর স্থান অবরুদ্ধ। অবরোধ সরান বা অন্য শুরু বাছাই করুন।",pickStart:"পথ দেখতে একটি শুরুর স্থান বাছাই করুন।",imported:"ইম্পোর্ট হয়েছে",resetDone:"সিমুলেশন রিসেট হয়েছে",rt:"পথ",bad:"ইম্পোর্ট করা যায়নি:",nodesWord:"নোড",edgesWord:"করিডর",blockedEdge:"অবরুদ্ধ করিডর",closedExit:"বন্ধ বহির্গমন",routeLegend:"পথ",selectedL:"নির্বাচিত শুরু"}};
+const E=(en,bn)=>({en,bn});
+let lang="en";const t=k=>T[lang][k]||k;
+const S={data:null,nodes:{},edges:[],blockedN:new Set(),blockedE:new Set(),closedX:new Set(),start:"",lastErr:null,justRouted:false};
+const $=s=>document.querySelector(s);
+const NS="http://www.w3.org/2000/svg";
+
+/* ===== Parse & validate ===== */
+function validate(d){
+ const isObj=o=>o&&typeof o==="object"&&!Array.isArray(o);
+ if(!isObj(d))throw E("File must contain a JSON object.","ফাইলে একটি JSON অবজেক্ট থাকতে হবে।");
+ if(typeof d.building_name!=="string"||!d.building_name.trim())throw E("Building name is missing or empty.","ভবনের নাম নেই বা ফাঁকা।");
+ if(!Array.isArray(d.nodes))throw E("\"nodes\" array is missing.","\"nodes\" অ্যারে পাওয়া যায়নি।");
+ if(!Array.isArray(d.edges))throw E("\"edges\" array is missing.","\"edges\" অ্যারে পাওয়া যায়নি।");
+ if(d.nodes.length<2||d.nodes.length>60)throw E("Node count must be between 2 and 60.","নোডের সংখ্যা ২ থেকে ৬০-এর মধ্যে হতে হবে।");
+ if(d.edges.length<1||d.edges.length>150)throw E("Edge count must be between 1 and 150.","করিডরের সংখ্যা ১ থেকে ১৫০-এর মধ্যে হতে হবে।");
+ const nm={};
+ for(const n of d.nodes){
+  if(!isObj(n)||n.id===undefined||n.id===null||String(n.id).trim()==="")throw E("A node has no id.","একটি নোডের id নেই।");
+  const id=String(n.id);
+  if(nm[id])throw E(`Duplicate node id: ${id}`,`নোড id পুনরাবৃত্ত: ${id}`);
+  if(typeof n.label!=="string"||!n.label.trim())throw E(`Node ${id} has an empty label.`,`নোড ${id}-এর লেবেল ফাঁকা।`);
+  if(!["room","junction","exit"].includes(n.type))throw E(`Node ${id} has invalid type (use room, junction or exit).`,`নোড ${id}-এর টাইপ সঠিক নয় (room, junction বা exit হতে হবে)।`);
+  if(typeof n.x!=="number"||typeof n.y!=="number"||!isFinite(n.x)||!isFinite(n.y))throw E(`Node ${id} needs numeric x and y.`,`নোড ${id}-এর x ও y সংখ্যা হতে হবে।`);
+  nm[id]={id,label:n.label,type:n.type,x:n.x,y:n.y};
+ }
+ const eids=new Set(),pairs=new Set(),edges=[];
+ for(const e of d.edges){
+  if(!isObj(e)||e.id===undefined||String(e.id).trim()==="")throw E("A corridor has no id.","একটি করিডরের id নেই।");
+  const id=String(e.id),a=String(e.from),b=String(e.to);
+  if(eids.has(id))throw E(`Duplicate corridor id: ${id}`,`করিডর id পুনরাবৃত্ত: ${id}`);
+  eids.add(id);
+  if(!nm[a]||!nm[b])throw E(`Corridor ${id} references a missing node.`,`করিডর ${id} একটি অনুপস্থিত নোডের উল্লেখ করেছে।`);
+  if(a===b)throw E(`Corridor ${id} connects a node to itself.`,`করিডর ${id} একটি নোডকে নিজের সাথেই যুক্ত করেছে।`);
+  if(!Number.isInteger(e.cost)||e.cost<=0)throw E(`Corridor ${id} cost must be a positive integer.`,`করিডর ${id}-এর খরচ ধনাত্মক পূর্ণসংখ্যা হতে হবে।`);
+  const pk=[a,b].sort().join("\u0000");
+  if(pairs.has(pk))throw E(`Duplicate corridor between ${a} and ${b}.`,`${a} ও ${b}-এর মধ্যে একাধিক করিডর আছে।`);
+  pairs.add(pk);edges.push({id,from:a,to:b,cost:e.cost});
+ }
+ const st=d.initial_state||{};
+ const arr=k=>{const v=st[k]===undefined?[]:st[k];if(!Array.isArray(v))throw E(`initial_state.${k} must be an array.`,`initial_state.${k} অ্যারে হতে হবে।`);return v.map(String)};
+ const bn=arr("blocked_nodes"),be=arr("blocked_edges"),cx=arr("closed_exits");
+ for(const id of bn){if(!nm[id])throw E(`Blocked node ${id} does not exist.`,`অবরুদ্ধ নোড ${id} নেই।`);if(nm[id].type==="exit")throw E(`Blocked node ${id} must be a room or junction.`,`অবরুদ্ধ নোড ${id} কক্ষ বা জংশন হতে হবে।`)}
+ for(const id of be)if(!eids.has(id))throw E(`Blocked corridor ${id} does not exist.`,`অবরুদ্ধ করিডর ${id} নেই।`);
+ for(const id of cx){if(!nm[id])throw E(`Closed exit ${id} does not exist.`,`বন্ধ বহির্গমন ${id} নেই।`);if(nm[id].type!=="exit")throw E(`Closed exit ${id} must be an exit node.`,`বন্ধ বহির্গমন ${id} একটি exit নোড হতে হবে।`)}
+ return{name:d.building_name.trim(),nodes:nm,edges,init:{bn,be,cx}};
+}
+function loadData(raw){
+ try{
+  const v=validate(raw);
+  S.data=v;S.nodes=v.nodes;S.edges=v.edges;S.start="";S.lastErr=null;
+  applyInitialState();$("#err").textContent="";
+  toast(`${t("imported")}: ${v.name} (${Object.keys(v.nodes).length} ${t("nodesWord")}, ${v.edges.length} ${t("edgesWord")})`);
+ }catch(e){S.lastErr=e.en?e:E("Unexpected error: "+e.message,"অপ্রত্যাশিত ত্রুটি: "+e.message);}
+ renderAll();
+}
+function readFile(f){
+ if(!f)return;const r=new FileReader();
+ r.onload=()=>{let j;try{j=JSON.parse(r.result)}catch(e){S.lastErr=E("File is not valid JSON.","ফাইলটি সঠিক JSON নয়।");renderAll();return}loadData(j)};
+ r.onerror=()=>{S.lastErr=E("Could not read the file.","ফাইলটি পড়া যায়নি।");renderAll()};
+ r.readAsText(f);
+}
+/* RESET restores EXACTLY the imported initial_state (not empty). */
+function applyInitialState(){
+ const i=S.data.init;S.blockedN=new Set(i.bn);S.blockedE=new Set(i.be);S.closedX=new Set(i.cx);
+}
+
+/* ===== Graph + Dijkstra ===== */
+// Hazard filtering: blocked nodes are removed entirely (so all incident edges vanish);
+// blocked edges are removed individually. Closed exits stay traversable but are never destinations.
+function buildGraph(){
+ const adj={};for(const id in S.nodes)if(!S.blockedN.has(id))adj[id]=[];
+ for(const e of S.edges){
+  if(S.blockedE.has(e.id)||S.blockedN.has(e.from)||S.blockedN.has(e.to))continue;
+  adj[e.from].push([e.to,e.cost,e.id]);adj[e.to].push([e.from,e.cost,e.id]);
+ }
+ return adj;
+}
+// Plain O(V^2) Dijkstra — valid because all costs are positive; V<=60.
+function dijkstra(adj,src){
+ const dist={},done=new Set();for(const id in adj)dist[id]=Infinity;dist[src]=0;
+ for(;;){
+  let u=null;for(const id in adj)if(!done.has(id)&&dist[id]<Infinity&&(u===null||dist[id]<dist[u]))u=id;
+  if(u===null)break;done.add(u);
+  for(const[v,w]of adj[u])if(dist[u]+w<dist[v])dist[v]=dist[u]+w;
+ }
+ return dist;
+}
+const cmpId=(a,b)=>a<b?-1:a>b?1:0;
+// Tie-breaking: (1) min cost, (2) smallest exit ID. For equal-cost paths to that exit we run
+// Dijkstra FROM the exit and walk forward from the start, always taking the smallest neighbour ID
+// that stays on a shortest path => lexicographically smallest node-ID sequence, independent of traversal order.
+function calcRoute(){
+ if(!S.data)return{state:"none"};
+ if(!S.start)return{state:"pick"};
+ if(S.blockedN.has(S.start))return{state:"startBlocked"};
+ const adj=buildGraph(),d=dijkstra(adj,S.start);
+ const exits=Object.keys(S.nodes).filter(id=>S.nodes[id].type==="exit"&&!S.closedX.has(id)&&d[id]!==undefined&&d[id]<Infinity)
+  .sort((a,b)=>d[a]-d[b]||cmpId(a,b));
+ if(!exits.length)return{state:"noRoute"};
+ const ex=exits[0],dt=dijkstra(adj,ex),path=[S.start],edgeIds=[];let cur=S.start;
+ while(cur!==ex){
+  let best=null;
+  for(const[v,w,eid]of adj[cur])if(dt[v]+w===dt[cur]&&(best===null||cmpId(v,best[0])<0))best=[v,w,eid];
+  path.push(best[0]);edgeIds.push(best[2]);cur=best[0];
+ }
+ return{state:"ok",exit:ex,path,edgeIds,cost:d[ex]};
+}
+
+/* ===== Rendering ===== */
+const el=(n,a={},txt)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(txt!==undefined)e.textContent=txt;return e};
+function typeName(n){return t(n.type)}
+function renderMap(route){
+ const svg=$("#map");svg.innerHTML="";
+ if(!S.data){svg.setAttribute("viewBox","0 0 800 300");svg.appendChild(el("text",{x:400,y:150,"text-anchor":"middle",fill:"var(--mu)","font-size":18},t("noBuilding")));return}
+ const ns=Object.values(S.nodes),pad=70;
+ const x0=Math.min(...ns.map(n=>n.x))-pad,x1=Math.max(...ns.map(n=>n.x))+pad,y0=Math.min(...ns.map(n=>n.y))-pad,y1=Math.max(...ns.map(n=>n.y))+pad;
+ svg.setAttribute("viewBox",`${x0} ${y0} ${Math.max(x1-x0,200)} ${Math.max(y1-y0,150)}`);
+ const rEdges=new Set(route.edgeIds||[]),rNodes=new Set(route.path||[]);
+ const gE=el("g"),gR=el("g"),gL=el("g"),gN=el("g");
+ for(const e of S.edges){
+  const a=S.nodes[e.from],b=S.nodes[e.to],blk=S.blockedE.has(e.id),dead=S.blockedN.has(e.from)||S.blockedN.has(e.to);
+  gE.appendChild(el("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:blk?"var(--bad)":"var(--line)","stroke-width":blk?3:4,"stroke-dasharray":blk?"6 6":dead?"2 6":"","stroke-linecap":"round",opacity:dead&&!blk?.45:1}));
+  if(rEdges.has(e.id)){const len=Math.hypot(a.x-b.x,a.y-b.y);const l=el("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:"var(--route)","stroke-width":7,"stroke-linecap":"round",class:"rt"});l.style.setProperty("--len",len);gR.appendChild(l)}
+  const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+  gL.appendChild(el("text",{x:mx,y:my+4,class:"ec"},(blk?"✕ ":"")+e.cost));
+ }
+ for(const id in S.nodes){
+  const n=S.nodes[id],bl=S.blockedN.has(id),cl=S.closedX.has(id),sel=S.start===id,on=rNodes.has(id);
+  const g=el("g",{class:"node",transform:`translate(${n.x} ${n.y})`,opacity:bl||cl?.55:1});
+  const col=n.type==="exit"?"var(--exit)":n.type==="junction"?"var(--jn)":"var(--room)";
+  const stroke=on?"var(--route)":sel?"var(--sel)":"var(--tx)",sw=on||sel?4:1.5;
+  if(sel)g.appendChild(el("circle",{r:30,fill:"none",stroke:"var(--sel)","stroke-width":3,"stroke-dasharray":"4 4"}));
+  let shape;
+  if(n.type==="room")shape=el("rect",{x:-22,y:-15,width:44,height:30,rx:8});
+  else if(n.type==="junction")shape=el("circle",{r:13});
+  else shape=el("polygon",{points:"0,-20 22,0 0,20 -22,0"});
+  shape.setAttribute("fill",col);shape.setAttribute("stroke",stroke);shape.setAttribute("stroke-width",sw);
+  if(cl)shape.setAttribute("stroke-dasharray","5 3");
+  g.appendChild(shape);
+  if(n.type==="exit")g.appendChild(el("text",{y:4,style:"stroke:none;fill:#06210f;font-size:10px"},"EXIT"));
+  if(bl||cl){g.appendChild(el("path",{d:"M-12 -12L12 12M12 -12L-12 12",stroke:"var(--bad)","stroke-width":5,"stroke-linecap":"round"}))}
+  g.appendChild(el("text",{y:38},n.label+(bl?" ⛔":cl?" ⛔":"")));
+  g.appendChild(el("title",{},`${n.label} (${typeName(n)})`));
+  if(n.type!=="exit"){g.setAttribute("tabindex","0");g.setAttribute("role","button");g.setAttribute("aria-label",`${t("start")}: ${n.label}`);
+   const pick=()=>{S.start=id;renderAll();};g.addEventListener("click",pick);g.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();pick()}})}
+  gN.appendChild(g);
+ }
+ [gE,gR,gL,gN].forEach(g=>svg.appendChild(g));
+}
+const nl=id=>S.nodes[id]?S.nodes[id].label:id;
+function renderSummary(r){
+ const box=$("#summary"),badge=$("#badge");
+ const set=(cls,key)=>{badge.className="badge "+cls;badge.textContent=t(key)};
+ let h="";
+ if(r.state==="ok"){
+  set("b-ok","okB");
+  h=`<div class="kv"><div><small>${t("from")}</small><b>${esc(nl(S.start))}</b></div><div><small>${t("dest")}</small><b>${esc(nl(r.exit))}</b></div><div><small>${t("cost")}</small><b>${r.cost}</b></div><div><small>${t("corridors")}</small><b>${r.edgeIds.length}</b></div></div>
+  <div class="path" aria-label="${t("route")}">${r.path.map(esc).join(" → ")}</div>
+  <ol class="steps">${r.path.map(id=>`<li>${esc(nl(id))} <small>(${esc(id)})</small></li>`).join("")}</ol>`;
+ }else if(r.state==="noRoute"){set("b-bad","noB");h=`<div class="empty b-bad" style="margin-top:8px">⚠ ${t("noRoute")}</div>`}
+ else if(r.state==="startBlocked"){set("b-warn","sbB");h=`<div class="empty b-warn" style="margin-top:8px">⛔ ${t("startBlocked")}</div>`}
+ else{set("b-mu","idleB");h=`<div class="empty b-mu" style="margin-top:8px">${t(S.data?"pickStart":"noBuilding")}</div>`}
+ box.innerHTML=h;
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function renderStartSel(){
+ const sel=$("#startSel");sel.innerHTML="";
+ const o=document.createElement("option");o.value="";o.textContent=t("chooseStart");sel.appendChild(o);
+ if(S.data)for(const id of Object.keys(S.nodes).sort(cmpId)){const n=S.nodes[id];if(n.type==="exit")continue;
+  const op=document.createElement("option");op.value=id;op.textContent=`${n.label} (${id}) — ${typeName(n)}`+(S.blockedN.has(id)?` — ${t("blocked")}`:"");sel.appendChild(op)}
+ sel.value=S.start;sel.disabled=!S.data;
+}
+function row(key,label,bad,okTxt,badTxt,okBtn,badBtn,fn){
+ const d=document.createElement("div");d.className="item";
+ d.innerHTML=`<span class="n">${esc(label)}</span><span><span class="st ${bad?"b-bad":"b-ok"}">${bad?"✕ "+badTxt:"✓ "+okTxt}</span><button class="btn sm" data-k="${esc(key)}" aria-pressed="${bad}">${bad?badBtn:okBtn}</button></span>`;
+ d.querySelector("button").addEventListener("click",fn);return d;
+}
+function toggle(set,id,msg){set.has(id)?set.delete(id):set.add(id);renderAll(msg)}
+function renderControls(){
+ const hN=$("#hN"),hE=$("#hE"),hX=$("#hX");[hN,hE,hX].forEach(x=>x.innerHTML="");
+ if(!S.data){[hN,hE,hX].forEach(x=>x.innerHTML=`<div class="b-mu">—</div>`);$("#reset").disabled=true;return}
+ $("#reset").disabled=false;
+ for(const id of Object.keys(S.nodes).sort(cmpId)){const n=S.nodes[id];
+  if(n.type!=="exit")hN.appendChild(row("n"+id,`${n.label} (${id})`,S.blockedN.has(id),t("available"),t("blocked"),t("block"),t("unblock"),()=>toggle(S.blockedN,id)));
+  else hX.appendChild(row("x"+id,`${n.label} (${id})`,S.closedX.has(id),t("open"),t("closed"),t("close"),t("reopen"),()=>toggle(S.closedX,id)))}
+ for(const e of S.edges)hE.appendChild(row("e"+e.id,`${nl(e.from)} ↔ ${nl(e.to)} · ${e.cost}`,S.blockedE.has(e.id),t("available"),t("blocked"),t("block"),t("unblock"),()=>toggle(S.blockedE,e.id)));
+}
+function renderLegend(){
+ const i=(s)=>`<svg width="26" height="20" viewBox="-13 -10 26 20">${s}</svg>`;
+ $("#legend").innerHTML=
+ `<div>${i('<rect x="-11" y="-8" width="22" height="16" rx="5" fill="var(--room)"/>')}${t("room")}</div>
+  <div>${i('<circle r="8" fill="var(--jn)"/>')}${t("junction")}</div>
+  <div>${i('<polygon points="0,-10 12,0 0,10 -12,0" fill="var(--exit)"/>')}${t("exit")}</div>
+  <div>${i('<circle r="9" fill="none" stroke="var(--sel)" stroke-width="2" stroke-dasharray="3 3"/>')}${t("selectedL")}</div>
+  <div>${i('<line x1="-12" x2="12" stroke="var(--route)" stroke-width="5"/>')}${t("routeLegend")}</div>
+  <div>${i('<line x1="-12" x2="12" stroke="var(--bad)" stroke-width="3" stroke-dasharray="4 4"/>')}${t("blockedEdge")}</div>
+  <div>${i('<polygon points="0,-9 11,0 0,9 -11,0" fill="var(--exit)" opacity=".5" stroke-dasharray="3 2" stroke="var(--tx)"/><path d="M-6 -6L6 6M6 -6L-6 6" stroke="var(--bad)" stroke-width="3"/>')}${t("closedExit")}</div>
+  <div>${i('<circle r="8" fill="var(--jn)" opacity=".5"/><path d="M-6 -6L6 6M6 -6L-6 6" stroke="var(--bad)" stroke-width="3"/>')}${t("blocked")}</div>`;
+}
+function applyI18n(){
+ document.documentElement.lang=lang;
+ document.querySelectorAll("[data-i]").forEach(e=>e.textContent=t(e.dataset.i));
+ $("#droptxt").textContent=t("drop");
+ $("#l-bn").setAttribute("aria-pressed",lang==="bn");$("#l-en").setAttribute("aria-pressed",lang==="en");
+ $("#bname").textContent=S.data?S.data.name:"";
+ $("#startSel").setAttribute("aria-label",t("start"));
+}
+function renderAll(msg){
+ const focusKey=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.k:null;
+ const r=calcRoute();
+ applyI18n();renderStartSel();renderMap(r);renderSummary(r);renderControls();renderLegend();
+ $("#err").textContent=S.lastErr?`${t("bad")} ${S.lastErr[lang]}`:"";
+ if(focusKey){const b=document.querySelector(`[data-k="${CSS.escape(focusKey)}"]`);if(b)b.focus()}
+ if(msg)toast(msg);
+}
+let tt;function toast(m){const x=$("#toast");x.textContent=m;x.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>x.classList.remove("show"),2800)}
+
+/* ===== Wiring ===== */
+$("#imp").onclick=()=>$("#file").click();
+$("#file").onchange=e=>{readFile(e.target.files[0]);e.target.value=""};
+$("#smp").onclick=()=>loadData(JSON.parse(JSON.stringify(SAMPLE)));
+$("#startSel").onchange=e=>{S.start=e.target.value;renderAll()};
+$("#reset").onclick=()=>{if(!S.data)return;applyInitialState();renderAll(t("resetDone"))};
+$("#l-bn").onclick=()=>{lang="bn";renderAll()};$("#l-en").onclick=()=>{lang="en";renderAll()};
+const dz=$("#drop");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("over")}));
+dz.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
+renderAll();
+</script>
+</body>
+</html>
