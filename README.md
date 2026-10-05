@@ -47,3 +47,4 @@ The full contest brief: hard constraints, exact hazard rules, exact tie-breaking
 - The built-in sample is a stand-in matching the contest's expected sample results; judges' own files are handled by the same generic importer.
 
 ## Live deployment
+https://activecyberguard.github.io/vibe_coding_demo/
